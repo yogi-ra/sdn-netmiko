@@ -10,14 +10,14 @@ class CiscoBasic(Connection):
 
     def version(self) -> list:
         """Execute show version command."""
-        command = CommandProcessor(self, "show version")
+        command = CommandProcessor(self, "show version", "enable")
         return command.output()
 
     @property
     def clock(self) -> str:
         """Returns the time and date on the device."""
         self.to_enable_mode()
-        command = CommandProcessor(self, "show clock")
+        command = CommandProcessor(self, "show clock", "enable")
         command_output = command.output()
 
         if command_output[0]:
