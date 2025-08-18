@@ -5,7 +5,7 @@ import os
 
 if __name__ == "__main__":
     sw1 = {
-        "host": "10.100.100.2",
+        "host": os.environ["SDN_HOST"],
         "device_type": os.environ["SDN_DEVICE_TYPE"],
         "username": os.environ["SDN_USERNAME"],
         "password": os.environ["SDN_PASSWORD"],

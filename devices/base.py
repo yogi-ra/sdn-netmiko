@@ -54,15 +54,22 @@ class Connection:
 class CommandProcessor:
     """Network devices raw command handler"""
 
-    def __init__(self, connection: Connection, command):
+    def __init__(self, connection: Connection, command, mode: str = "config"):
         """
         :param command: raw command
         """
         self.command = command
         self.connection = connection
+        self.mode = mode
 
     def execute(self):
         self.execute_status = 0
+
+        if self.mode == "enable":
+            self.connection.to_enable_mode()
+
+        if self.mode == "config":
+            self.connection.to_config_mode()
 
         self.command_output = self.connection.remote_conn.send_command(
             self.command, raise_parsing_error=True
