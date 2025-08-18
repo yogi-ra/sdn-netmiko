@@ -54,14 +54,25 @@ class Connection:
 class CommandProcessor:
     """Network devices raw command handler"""
 
-    def __init__(self, connection: Connection, command, mode: str = "config"):
+    def __init__(self,
+                 connection: Connection,
+                 command, mode: str = "config",
+                 use_textfsm: bool = True,
+                 fallback_template: str = None
+                 ):
         """
+        :param connection: Connection object from Connection class
         :param command: raw command
+        :param mode: mode to run command on (option: enable, config)
+        :param use_textfsm: parse raw output (default: True)
+        :param fallback_template: provide template name from ntc-templates or a full path
         """
         self.command = command
         self.connection = connection
         self.mode = mode
-
+        self.use_textfsm = use_textfsm
+        self.fallback_template = fallback_template
+ 
     def execute(self):
         self.execute_status = 0
 
@@ -71,11 +82,26 @@ class CommandProcessor:
         if self.mode == "config":
             self.connection.to_config_mode()
 
-        self.command_output = self.connection.remote_conn.send_command(
-            self.command, raise_parsing_error=True
-        )
+        try:
+            kwargs = {
+                "use_textfsm": True,
+                "raise_parsing_error": True,
+            }
 
-        self.execute_status = 1
+            if not self.use_textfsm:
+                kwargs['use_textfsm'] = False
+
+            if self.fallback_template is not None:
+                kwargs['textfsm_template'] = self.fallback_template
+
+            self.command_output = self.connection.remote_conn.send_command(
+                self.command, **kwargs
+            )
+
+            self.execute_status = 1
+        except Exception:
+            self.execute_status = 0
+            self.command_output = ""
 
     def output(self) -> list:
         """
@@ -83,22 +109,12 @@ class CommandProcessor:
         if output[0] equals 0, command failed
         if output[0] equals 1, you good to go
         if output[0] equals 2, parse failed
-
-        index 1 tells you either parsed output, or error message
         """
         try:
             self.execute()
             return [
                 self.execute_status,
-                (
-                    parse_output(
-                        platform=self.connection.device["device_type"],
-                        command=self.command_output,
-                        data=self.execute(),
-                    )
-                    if self.execute_status
-                    else self.command_output
-                ),
+                self.command_output,
             ]
         except ParsingException:
             return [
@@ -107,6 +123,6 @@ class CommandProcessor:
             ]
         except Exception as e:
             return [
-                2,
+                self.execute_status,
                 "Failed to run command: " + str(e),
             ]
