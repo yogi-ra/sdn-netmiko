@@ -195,6 +195,6 @@ class CiscoSwitch(Connection):
             return f"Command execution fails {command_output[1]}"
         
     def set_vlan(self, vlan_id: int, vlan_name: str):
-        command_str = f"vlan {vlan_id} name {vlan_name}"
+        command_str = f"vlan {vlan_id}\nname {vlan_name}"
         command = CommandProcessor(self, command_str, "config")
         command.execute()
