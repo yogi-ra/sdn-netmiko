@@ -1,5 +1,5 @@
 from netmiko import ConnectHandler
-from ntc_templates.parse import parse_output, ParsingException
+from ntc_templates.parse import ParsingException
 
 
 class Connection:
@@ -54,12 +54,14 @@ class Connection:
 class CommandProcessor:
     """Network devices raw command handler"""
 
-    def __init__(self,
-                 connection: Connection,
-                 command, mode: str = "config",
-                 use_textfsm: bool = True,
-                 fallback_template: str = None
-                 ):
+    def __init__(
+        self,
+        connection: Connection,
+        command,
+        mode: str = "config",
+        use_textfsm: bool = True,
+        fallback_template: str = "",
+    ):
         """
         :param connection: Connection object from Connection class
         :param command: raw command
@@ -72,7 +74,7 @@ class CommandProcessor:
         self.mode = mode
         self.use_textfsm = use_textfsm
         self.fallback_template = fallback_template
- 
+
     def execute(self):
         self.execute_status = 0
 
@@ -89,10 +91,10 @@ class CommandProcessor:
             }
 
             if not self.use_textfsm:
-                kwargs['use_textfsm'] = False
+                kwargs["use_textfsm"] = False
 
-            if self.fallback_template is not None:
-                kwargs['textfsm_template'] = self.fallback_template
+            if self.fallback_template:
+                kwargs["textfsm_template"] = self.fallback_template
 
             self.command_output = self.connection.remote_conn.send_command(
                 self.command, **kwargs

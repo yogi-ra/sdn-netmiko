@@ -2,14 +2,14 @@ from datetime import datetime
 from re import search
 import pytz
 
-from devices.base import (
-    Connection,
-    CommandProcessor
-)
+from devices.base import Connection, CommandProcessor
 
+
+# TODO: Better error handling
 class CiscoBasic(Connection):
     """Basic Cisco IOS and XE device management"""
-    def version(self) -> list:
+
+    def version(self):
         """Execute show version command."""
         command_str = "show version"
         command = CommandProcessor(self, command_str, "enable")
@@ -21,7 +21,7 @@ class CiscoBasic(Connection):
             return f"Command execution fails {command_output[1]}"
 
     @property
-    def clock(self) -> datetime:
+    def clock(self):
         """Returns the time and date on the device."""
         command_str = "show clock"
         command = CommandProcessor(self, command_str, "enable")
@@ -42,7 +42,7 @@ class CiscoBasic(Connection):
         return clock_utc.strftime("%H:%M:%S %Z %a %b %d %Y")
 
     @clock.setter
-    def clock(self, datetime_obj: datetime) -> datetime:
+    def clock(self, datetime_obj: datetime):
         """
         Sets the clock of the device using Netmiko.
         :param datetime_obj: an instance of the datetime.datetime class
@@ -54,11 +54,10 @@ class CiscoBasic(Connection):
         if isinstance(datetime_obj, datetime):
             equipment_date_raw_values = command_output[0].values()
             if len(equipment_date_raw_values[0]) < 6:
-                equipment_date_raw_values[0] += '000'
-            
+                equipment_date_raw_values[0] += "000"
+
             equipment_date = datetime.strptime(
-                equipment_date_raw_values,
-                "%H:%M:%S.%f %Z %a %b %d %Y"
+                equipment_date_raw_values, "%H:%M:%S.%f %Z %a %b %d %Y"
             )
 
             timedelta = abs((equipment_date - datetime_obj).total_seconds())
@@ -68,8 +67,6 @@ class CiscoBasic(Connection):
                 command_str = f"clock set {date}"
                 command = CommandProcessor(self, command_str, "enable")
                 command.execute()
-        else:
-            raise ValueError("Must assign a datetime object.")
 
     @property
     def hostname(self) -> str:
@@ -90,15 +87,17 @@ class CiscoBasic(Connection):
             command = CommandProcessor(self, command_str, mode="config")
             command.execute()
         else:
-            raise ValueError("Hostname should contain at least one alphabet or '-' or '_' character")
+            raise ValueError(
+                "Hostname should contain at least one alphabet or '-' or '_' character"
+            )
 
-    def get_users(self) -> list:
+    def get_users(self):
         """Returns a list of configured users."""
         command_str = "show running-config | include username"
         command = CommandProcessor(self, command_str, mode="enable", use_textfsm=False)
         command_output = command.output()
         if command_output[0] == 1:
-            users_str = command_output[1].split('\n')
+            users_str = command_output[1].split("\n")
         else:
             return f"Command execution fails {command_output[1]}"
 
@@ -107,7 +106,7 @@ class CiscoBasic(Connection):
             user_list.append(line.split()[1])
         return user_list
 
-    def get_active_users(self) -> list:
+    def get_active_users(self):
         """Returns a list of active users."""
         command_str = "show users"
         command = CommandProcessor(self, command_str, mode="enable")
@@ -157,7 +156,7 @@ class CiscoBasic(Connection):
         """
         self.to_config_mode()
         self.remote_conn.send_command(f"ip domain-name {domain_name}")
-    
+
     def show_interfaces(self) -> list:
         """Show device interfaces"""
         command_str = "show interfaces"
@@ -169,9 +168,11 @@ class CiscoBasic(Connection):
         self.to_enable_mode()
         self.remote_conn.send_command("write memory")
 
+
 class CiscoSwitch(Connection):
     """Cisco IOS and XE Switch Management"""
-    def show_vlans(self) -> list:
+
+    def show_vlans(self):
         command_str = "show vlan"
         command = CommandProcessor(self, command_str, "enable")
         command_output = command.output()
@@ -180,7 +181,7 @@ class CiscoSwitch(Connection):
             return command_output[1]
         else:
             return f"Command execution fails {command_output[1]}"
-    
+
     def show_vlan(self, vlan_id: int):
         command_str = "show vlan brief"
         command = CommandProcessor(self, command_str, "enable")
@@ -193,8 +194,9 @@ class CiscoSwitch(Connection):
             return "There's no such vlan"
         else:
             return f"Command execution fails {command_output[1]}"
-        
+
     def set_vlan(self, vlan_id: int, vlan_name: str):
         command_str = f"vlan {vlan_id}\nname {vlan_name}"
         command = CommandProcessor(self, command_str, "config")
         command.execute()
+
